@@ -33,7 +33,6 @@ const fetchMyIP = function(callback) {
 //fetch coords from IP
 const fetchCoordsByIP = function(ip, callback) {
   //use request to fetch geo coords from JSON API
-  let coords = {};
   request(GEO_COORDS + ip, (error, response, body) => {
     if (error) {
       callback(error, null);
@@ -45,12 +44,37 @@ const fetchCoordsByIP = function(ip, callback) {
       return;
     }
     //parse data in JSON format
-    let data = JSON.parse(body);
-    //extract lon/lat info
-    coords.latitude = data.latitude;
-    coords.longitude = data.longitude;
-    callback(null, coords);
+    let { latitude, longitude } = JSON.parse(body);
+    //pass lon/lat info via callback
+    callback(null, { latitude, longitude });
   });
 };
 
-module.exports = { fetchMyIP, fetchCoordsByIP };
+/**
+ * Makes a single API request to retrieve upcoming ISS fly over times the for the given lat/lng coordinates.
+ * Input:
+ *   - An object with keys `latitude` and `longitude`
+ *   - A callback (to pass back an error or the array of resulting data)
+ * Returns (via Callback):
+ *   - An error, if any (nullable)
+ *   - The fly over times as an array of objects (null if error). Example:
+ *     [ { risetime: 134564234, duration: 600 }, ... ]
+ */
+const fetchISSFlyOverTimes = function(coords, callback) {
+  //use request to fetch ISS flyover data given an object of coords
+  request(`https://iss-pass.herokuapp.com/json/?lat=${coords.latitude}&lon=${coords.longitude}`, (error, response, body) => {
+    if (error) {
+      callback(error, null);
+      return;
+    }
+    if (response.statusCode !== 200) {
+      callback(Error(`Status Code ${response.statusCode} when fetching ISS flyover data: ${body}`), null);
+      return;
+    }
+    //parse JSON data
+    let data = JSON.parse(body).response;
+    callback(null, data);
+  });
+};
+
+module.exports = { fetchMyIP, fetchCoordsByIP, fetchISSFlyOverTimes };
