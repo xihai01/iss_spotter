@@ -8,6 +8,7 @@
  */
 const request = require('request');
 const IP = 'https://api.ipify.org?format=json';
+const GEO_COORDS = 'https://freegeoip.app/json/';
 
 const fetchMyIP = function(callback) {
   //use request to fetch IP address from JSON API
@@ -29,4 +30,27 @@ const fetchMyIP = function(callback) {
   });
 };
 
-module.exports = { fetchMyIP };
+//fetch coords from IP
+const fetchCoordsByIP = function(ip, callback) {
+  //use request to fetch geo coords from JSON API
+  let coords = {};
+  request(GEO_COORDS + ip, (error, response, body) => {
+    if (error) {
+      callback(error, null);
+      return;
+    }
+    //if a non-200 status code, assume an error
+    if (response.statusCode !== 200) {
+      callback(Error(`Status Code ${response.statusCode} when fetching Coordinates for IP: ${body}`), null);
+      return;
+    }
+    //parse data in JSON format
+    let data = JSON.parse(body);
+    //extract lon/lat info
+    coords.latitude = data.latitude;
+    coords.longitude = data.longitude;
+    callback(null, coords);
+  });
+};
+
+module.exports = { fetchMyIP, fetchCoordsByIP };
